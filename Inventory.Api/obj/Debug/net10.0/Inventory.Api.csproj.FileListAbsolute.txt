@@ -120,3 +120,4 @@
 /home/sp/inventory-management/Inventory.Api/obj/Debug/net10.0/Inventory.Api.pdb
 /home/sp/inventory-management/Inventory.Api/obj/Debug/net10.0/Inventory.Api.genruntimeconfig.cache
 /home/sp/inventory-management/Inventory.Api/obj/Debug/net10.0/ref/Inventory.Api.dll
+/home/sp/inventory-management/Inventory.Api/obj/Debug/net10.0/Inventory.Api.sourcelink.json
