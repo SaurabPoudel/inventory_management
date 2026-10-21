@@ -9,9 +9,9 @@ namespace Inventory.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class ProductsController  :  ControllerBase
+public class ProductsController : ControllerBase
 {
-    private readonly InventoryDbContext  _context;
+    private readonly InventoryDbContext _context;
 
     public ProductsController(InventoryDbContext context)
     {
@@ -26,15 +26,27 @@ public class ProductsController  :  ControllerBase
     }
 
     [HttpPost]
-    public  async Task<ActionResult<Product>> CreateProduct (
+    public async Task<ActionResult<Product>> CreateProduct(
         CreateProductRequest request
     )
     {
+        var sku = request.Sku.Trim();
+
+        var skuExists = await _context.Products
+            .AnyAsync(p => p.Sku == sku);
+
+        if (skuExists)
+        {
+            return Conflict(new
+            {
+                message = $"A product with SKU '{sku}' already exists."
+            });
+        }
         var product = new Product
         {
-            Sku  = request.Sku.Trim(),
-            Name  = request.Name.Trim(),
-            UnitPrice  = request.UnitPrice,
+            Sku = sku,
+            Name = request.Name.Trim(),
+            UnitPrice = request.UnitPrice,
             QuantityOnHand = request.QuantityOnHand,
             LowStockThreshold = request.LowStockThreshold
         };
@@ -43,12 +55,75 @@ public class ProductsController  :  ControllerBase
         await _context.SaveChangesAsync();
 
         return CreatedAtAction(
-            nameof(GetProducts),
-            new  { id = product.id},
-            product
-        );
-
-        
-    
+    nameof(GetProductById),
+    new { id = product.id },
+    product
+);
     }
+
+
+    [HttpGet("{id:int}")]
+    public async Task<ActionResult<Product>> GetProductById(int id)
+    {
+        var product = await _context.Products.FindAsync(id);
+        if (product == null)
+        {
+            return NotFound();
+        }
+        return Ok(product);
+    }
+
+    [HttpPut("{id:int}")]
+public async Task<ActionResult<Product>> UpdateProduct(
+    int id,
+    CreateProductRequest request)
+{
+    var product = await _context.Products.FindAsync(id);
+
+    if (product == null)
+    {
+        return NotFound();
+    }
+
+    var sku = request.Sku.Trim();
+
+    var skuExists = await _context.Products
+        .AnyAsync(p => p.Sku == sku && p.id != id);
+
+    if (skuExists)
+    {
+        return Conflict(new
+        {
+            message = $"A product with SKU '{sku}' already exists."
+        });
+    }
+
+    product.Sku = sku;
+    product.Name = request.Name.Trim();
+    product.UnitPrice = request.UnitPrice;
+    product.QuantityOnHand = request.QuantityOnHand;
+    product.LowStockThreshold = request.LowStockThreshold;
+
+    await _context.SaveChangesAsync();
+
+    return Ok(product);
 }
+
+[HttpDelete("{id:int}")]
+public async Task<IActionResult> DeleteProduct(int id)
+{
+    var product = await _context.Products.FindAsync(id);
+
+    if (product == null)
+    {
+        return NotFound();
+    }
+
+    _context.Products.Remove(product);
+
+    await _context.SaveChangesAsync();
+
+    return NoContent();
+}
+}
+
